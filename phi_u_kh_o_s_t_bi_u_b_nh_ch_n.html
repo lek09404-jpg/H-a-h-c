@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phiếu Khảo Sát Tách Chất Hóa Học - Google Forms Style</title>
+    <!-- Tải Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tải Google Font Roboto chuẩn Google Forms -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Tải Chart.js và Plugin hiển thị phần trăm trực tiếp trên biểu đồ quạt -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <style>
+        body {
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f0ebf8;
+            color: #202124;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Hiệu ứng gạch chân khi nhập text giống Google Forms */
+        .gform-input-wrapper {
+            position: relative;
+        }
+        .gform-input {
+            width: 100%;
+            border: none;
+            border-bottom: 1px solid #dadce0;
+            padding: 8px 0;
+            font-size: 14px;
+            background: transparent;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .gform-input-line {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background-color: #673ab7;
+            transition: width 0.25s ease, left 0.25s ease;
+        }
+        .gform-input:focus ~ .gform-input-line {
+            width: 100%;
+            left: 0;
+        }
+
+        /* Custom Radio Button giống Google Forms */
+        .gform-radio {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #5f6368;
+            border-radius: 50%;
+            outline: none;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.15s ease;
+            flex-shrink: 0;
+        }
+        .gform-radio:hover {
+            box-shadow: 0 0 0 8px rgba(103, 58, 183, 0.08);
+        }
+        .gform-radio:checked {
+            border-color: #673ab7;
+        }
+        .gform-radio:checked::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #673ab7;
+        }
+
+        /* Thanh tab điều hướng trên cùng */
+        .tab-btn {
+            position: relative;
+            transition: color 0.2s;
+        }
+        .tab-btn.active {
+            color: #673ab7;
+            font-weight: 500;
+        }
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background-color: #673ab7;
+            border-radius: 3px 3px 0 0;
+        }
+
+        /* Rung nhẹ khi báo lỗi thiếu câu bắt buộc */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .error-shake {
+            animation: shake 0.3s ease-in-out;
+            border-color: #d93025 !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+
+    <!-- Thanh điều hướng Top Bar phong cách Google Forms -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-xs">
+        <div class="max-w-3xl mx-auto px-4 pt-3 flex flex-col">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-3">
+                    <!-- Icon Google Forms SVG -->
+                    <div class="w-9 h-9 rounded-lg bg-[#673ab7] flex items-center justify-center text-white shadow-xs shrink-0">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                        </svg>
+                    </div>
+                    <span class="font-medium text-gray-800 text-base sm:text-lg truncate">Phiếu Bình Chọn Khảo Sát Hóa Học</span>
+                </div>
+                <span class="text-xs text-gray-500 hidden sm:inline-flex items-center gap-1">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
+                    Đã lưu tự động
+                </span>
+            </div>
+
+            <!-- 2 Tab chuyển đổi: Câu hỏi & Câu trả lời -->
+            <nav class="flex justify-center gap-8 text-sm">
+                <button id="tab-questions" onclick="switchTab('questions')" class="tab-btn active py-2.5 px-2 cursor-pointer">
+                    Câu hỏi
+                </button>
+                <button id="tab-responses" onclick="switchTab('responses')" class="tab-btn py-2.5 px-2 cursor-pointer flex items-center gap-1.5 text-gray-600 hover:text-gray-900">
+                    <span>Câu trả lời</span>
+                    <span id="badge-count" class="bg-[#673ab7] text-white text-xs font-medium px-2 py-0.5 rounded-full">0</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Nội dung chính căn giữa chuẩn chiều rộng Google Forms (max-w-3xl ~ 768px) -->
+    <main class="max-w-3xl mx-auto px-3 sm:px-4 mt-4">
+
+        <!-- ========================================================= -->
+        <!-- TAB 1: PHIẾU BÌNH CHỌN (CÂU HỎI)                          -->
+        <!-- ========================================================= -->
+        <section id="view-questions" class="space-y-3">
+            
+            <!-- Card Tiêu đề chính với dải màu tím đậm trên cùng -->
+            <div class="bg-white rounded-lg border border-gray-300 shadow-xs overflow-hidden">
+                <div class="h-2.5 bg-[#673ab7] w-full"></div>
+                <div class="p-5 sm:p-6">
+                    <h1 class="text-xl sm:text-2xl font-normal text-gray-900 leading-snug mb-3">
+                        Câu hỏi trong phần khảo sát: "Làm thế nào để tách chất trong lá trà?" Và "Làm sao để tách riêng dầu ăn và nước mà không dùng phương pháp chưng cất"
+                    </h1>
+                    
+                    <div class="text-sm text-gray-700 space-y-1.5 bg-purple-50/70 p-3.5 rounded-md border border-purple-100 mb-4">
+                        <p class="font-medium text-gray-800 mb-1">Quy ước mức độ bình chọn tương ứng với màu hiển thị trên biểu đồ quạt:</p>
+                        <div class="flex items-center gap-2">
+                            <span class="w-3.5 h-3.5 rounded-full bg-[#22c55e] inline-block shrink-0"></span>
+                            <span><strong>Màu xanh:</strong> Biết cách làm và giải thích được</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-3.5 h-3.5 rounded-full bg-[#eab308] inline-block shrink-0"></span>
+                            <span><strong>Màu vàng:</strong> Biết nhưng chưa giải thích được</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-3.5 h-3.5 rounded-full bg-[#ef4444] inline-block shrink-0"></span>
+                            <span><strong>Màu đỏ:</strong> Chưa biết cách làm</span>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-gray-200 pt-3 flex items-center justify-between text-xs sm:text-sm">
+                        <span class="text-[#d93025] font-normal">* Biểu thị câu hỏi bắt buộc</span>
+                        <span class="text-gray-500">Bình chọn ẩn danh</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Khảo Sát -->
+            <form id="survey-form" onsubmit="handleFormSubmit(event)" class="space-y-3" novalidate>
+                
+                <!-- Card Câu hỏi 1 -->
+                <div id="card-q1" class="bg-white rounded-lg border border-gray-300 p-5 sm:p-6 shadow-xs transition-colors">
+                    <p class="text-base text-gray-900 mb-4 font-normal">
+                        1. Làm thế nào để tách chất trong lá trà? <span class="text-[#d93025]">*</span>
+                    </p>
+                    <div class="space-y-3">
+                        <label class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors border border-transparent has-[:checked]:bg-green-50/60 has-[:checked]:border-green-200">
+                            <input type="radio" name="q1" value="green" class="gform-radio" onchange="clearError('card-q1', 'err-q1')">
+                            <span class="w-3.5 h-3.5 rounded-full bg-[#22c55e] shrink-0"></span>
+                            <span class="text-sm sm:text-base text-gray-800">Biết cách làm và giải thích được</span>
+                        </label>
+                        <label class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors border border-transparent has-[:checked]:bg-yellow-50/70 has-[:checked]:border-yellow-200">
+                            <input type="radio" name="q1" value="yellow" class="gform-radio" onchange="clearError('card-q1', 'err-q1')">
+                            <span class="w-3.5 h-3.5 rounded-full bg-[#eab308] shrink-0"></span>
+                            <span class="text-sm sm:text-base text-gray-800">Biết nhưng chưa giải thích được</span>
+                        </label>
+                        <label class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors border border-transparent has-[:checked]:bg-red-50/60 has-[:checked]:border-red-200">
+                            <input type="radio" name="q1" value="red" class="gform-radio" onchange="clearError('card-q1', 'err-q1')">
+                            <span class="w-3.5 h-3.5 rounded-full bg-[#ef4444] shrink-0"></span>
+                            <span class="text-sm sm:text-base text-gray-800">Chưa biết cách làm</span>
+                        </label>
+                    </div>
+                    <p id="err-q1" class="hidden text-[#d93025] text-xs mt-3 flex items-center gap-1.5">
+                        <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                        Đây là một câu hỏi bắt buộc
+                    </p>
+                </div>
+
+                <!-- Card Câu hỏi 2 -->
+                <div id="card-q2" class="bg-white rounded-lg border border-gray-300 p-5 sm:p-6 shadow-xs transition-colors">
+                    <p class="text-base text-gray-900 mb-4 font-normal">
+                        2. Làm sao để tách riêng dầu ăn và nước mà không dùng phương pháp chưng cất? <span class="text-[#d93025]">*</span>
+                    </p>
+                    <div class="space-y-3">
+                        <label class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors border border-transparent has-[:checked]:bg-green-50/60 has-[:checked]:border-green-200">
+                            <input type="radio" name="q2" value="green" class="gform-radio" onchange="clearError('card-q2', 'err-q2')">
+                            <span class="w-3.5 h-3.5 rounded-full bg-[#22c55e] shrink-0"></span>
+                            <span class="text-sm sm:text-base text-gray-800">Biết cách làm và giải thích được</span>
+                        </label>
+                        <label class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors border border-transparent has-[:checked]:bg-yellow-50/70 has-[:checked]:border-yellow-200">
+                            <input type="radio" name="q2" value="yellow" class="gform-radio" onchange="clearError('card-q2', 'err-q2')">
+                            <span class="w-3.5 h-3.5 rounded-full bg-[#eab308] shrink-0"></span>
+                            <span class="text-sm sm:text-base text-gray-800">Biết nhưng chưa giải thích được</span>
+                        </label>
+                        <label class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors border border-transparent has-[:checked]:bg-red-50/60 has-[:checked]:border-red-200">
+                            <input type="radio" name="q2" value="red" class="gform-radio" onchange="clearError('card-q2', 'err-q2')">
+                            <span class="w-3.5 h-3.5 rounded-full bg-[#ef4444] shrink-0"></span>
+                            <span class="text-sm sm:text-base text-gray-800">Chưa biết cách làm</span>
+                        </label>
+                    </div>
+                    <p id="err-q2" class="hidden text-[#d93025] text-xs mt-3 flex items-center gap-1.5">
+                        <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                        Đây là một câu hỏi bắt buộc
+                    </p>
+                </div>
+
+                <!-- Card Câu hỏi 3: Ý kiến đóng góp thêm -->
+                <div class="bg-white rounded-lg border border-gray-300 p-5 sm:p-6 shadow-xs">
+                    <label for="comment-input" class="block text-base text-gray-900 mb-1 font-normal">
+                        3. Ý kiến đóng góp thêm
+                    </label>
+                    <p class="text-xs text-gray-500 mb-4">Ghi chú cách làm, thắc mắc hoặc đề xuất thí nghiệm của bạn (không bắt buộc)</p>
+                    <div class="gform-input-wrapper">
+                        <input type="text" id="comment-input" placeholder="Câu trả lời của bạn" class="gform-input text-gray-800">
+                        <div class="gform-input-line"></div>
+                    </div>
+                </div>
+
+                <!-- Khu vực nút Gửi & Xóa hết câu trả lời -->
+                <div class="flex items-center justify-between pt-2">
+                    <button type="submit" class="bg-[#673ab7] hover:bg-[#5e35b1] active:bg-[#512da8] text-white font-medium text-sm px-6 py-2.5 rounded-md shadow-xs cursor-pointer transition-colors">
+                        Gửi
+                    </button>
+                    <button type="button" onclick="resetFormInputs()" class="text-[#673ab7] hover:bg-purple-100/60 font-medium text-sm px-4 py-2 rounded-md cursor-pointer transition-colors">
+                        Xóa hết câu trả lời
+                    </button>
+                </div>
+            </form>
+
+            <!-- Màn hình xác nhận sau khi Gửi thành công (ẩn mặc định) -->
+            <div id="submit-success-card" class="hidden bg-white rounded-lg border border-gray-300 shadow-xs overflow-hidden">
+                <div class="h-2.5 bg-[#673ab7] w-full"></div>
+                <div class="p-6 sm:p-8">
+                    <h2 class="text-2xl font-normal text-gray-900 mb-2">Đã ghi nhận câu trả lời của bạn</h2>
+                    <p class="text-sm text-gray-600 mb-6">Cảm ơn bạn đã tham gia bình chọn khảo sát. Dữ liệu đã được cập nhật trực tiếp vào biểu đồ quạt.</p>
+                    <div class="flex flex-wrap gap-4 text-sm">
+                        <button onclick="switchTab('responses')" class="bg-[#673ab7] hover:bg-[#5e35b1] text-white font-medium px-5 py-2 rounded-md cursor-pointer transition-colors">
+                            Xem biểu đồ kết quả ngay
+                        </button>
+                        <button onclick="submitAnotherResponse()" class="text-[#673ab7] hover:underline font-medium py-2 px-2 cursor-pointer">
+                            Gửi ý kiến phản hồi khác
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ========================================================= -->
+        <!-- TAB 2: KẾT QUẢ & BIỂU ĐỒ QUẠT (CÂU TRẢ LỜI)               -->
+        <!-- ========================================================= -->
+        <section id="view-responses" class="hidden space-y-4">
+            
+            <!-- Thẻ tổng hợp số câu trả lời giống Google Forms -->
+            <div class="bg-white rounded-lg border border-gray-300 shadow-xs overflow-hidden">
+                <div class="h-2.5 bg-[#673ab7] w-full"></div>
+                <div class="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-normal text-gray-900">
+                            <span id="total-responses-text">0</span> câu trả lời
+                        </h2>
+                        <p class="text-xs text-gray-500 mt-1">Tỷ lệ phần trăm tự động cập nhật trên biểu đồ hình quạt</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="resetAllSurveyData()" class="text-xs sm:text-sm text-gray-600 hover:text-[#d93025] hover:bg-red-50 border border-gray-300 px-3 py-1.5 rounded-md cursor-pointer transition-colors">
+                            Đặt lại tất cả về 0
+                        </button>
+                        <button onclick="switchTab('questions')" class="text-xs sm:text-sm bg-purple-50 text-[#673ab7] hover:bg-purple-100 font-medium px-3 py-1.5 rounded-md cursor-pointer transition-colors">
+                            + Bình chọn tiếp
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Biểu đồ quạt Câu 1 -->
+            <div class="bg-white rounded-lg border border-gray-300 p-5 sm:p-6 shadow-xs">
+                <div class="mb-4">
+                    <h3 class="text-base font-medium text-gray-900">1. Làm thế nào để tách chất trong lá trà?</h3>
+                    <p class="text-xs text-gray-500 mt-0.5"><span id="q1-subcount">0</span> câu trả lời</p>
+                </div>
+                <div class="relative h-64 sm:h-72 w-full flex items-center justify-center">
+                    <canvas id="pieChartQ1"></canvas>
+                </div>
+                <!-- Bảng tóm tắt số phiếu chi tiết bên dưới -->
+                <div id="q1-stats-bar" class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-gray-100 text-center text-xs">
+                    <!-- JS render -->
+                </div>
+            </div>
+
+            <!-- Biểu đồ quạt Câu 2 -->
+            <div class="bg-white rounded-lg border border-gray-300 p-5 sm:p-6 shadow-xs">
+                <div class="mb-4">
+                    <h3 class="text-base font-medium text-gray-900">2. Làm sao để tách riêng dầu ăn và nước mà không dùng phương pháp chưng cất?</h3>
+                    <p class="text-xs text-gray-500 mt-0.5"><span id="q2-subcount">0</span> câu trả lời</p>
+                </div>
+                <div class="relative h-64 sm:h-72 w-full flex items-center justify-center">
+                    <canvas id="pieChartQ2"></canvas>
+                </div>
+                <div id="q2-stats-bar" class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-gray-100 text-center text-xs">
+                    <!-- JS render -->
+                </div>
+            </div>
+
+            <!-- Danh sách Ý kiến đóng góp thêm -->
+            <div class="bg-white rounded-lg border border-gray-300 p-5 sm:p-6 shadow-xs">
+                <div class="mb-3">
+                    <h3 class="text-base font-medium text-gray-900">3. Ý kiến đóng góp thêm</h3>
+                    <p class="text-xs text-gray-500 mt-0.5"><span id="comments-count">0</span> câu trả lời văn bản</p>
+                </div>
+                <div id="comments-list" class="space-y-2 max-h-72 overflow-y-auto pr-1">
+                    <!-- JS render danh sách bình luận -->
+                </div>
+            </div>
+
+            <!-- Thẻ gợi ý đáp án giải thích chuẩn (Hỗ trợ giáo viên/nhóm thảo luận sau bình chọn) -->
+            <details class="bg-white rounded-lg border border-gray-300 p-5 shadow-xs group">
+                <summary class="text-sm font-medium text-[#673ab7] cursor-pointer list-none flex items-center justify-between">
+                    <span>💡 Xem đáp án giải thích khoa học (Để chốt kiến thức cho nhóm Vàng & Đỏ)</span>
+                    <span class="text-xs text-gray-500 group-open:rotate-180 transition-transform">▼</span>
+                </summary>
+                <div class="mt-3 pt-3 border-t border-gray-100 text-sm text-gray-700 space-y-2.5 leading-relaxed">
+                    <p><strong>1. Tách chất trong lá trà:</strong> Dùng phương pháp <em>chiết (ngâm/hãm bằng nước nóng)</em> kết hợp <em>lọc</em>. Các chất tan trong trà (caffeine, tannin, chất màu, hương) hòa tan vào nước nóng, còn bã lá trà không tan được giữ lại trên rây/giấy lọc.</p>
+                    <p><strong>2. Tách dầu ăn và nước không dùng chưng cất:</strong> Dùng phương pháp <em>chiết lỏng – lỏng (phễu chiết hoặc gạn)</em>. Do dầu ăn và nước không tan vào nhau, đồng thời dầu ăn có khối lượng riêng nhỏ hơn nước nên nổi lên trên, nước chìm xuống dưới giúp tách riêng dễ dàng.</p>
+                </div>
+            </details>
+
+        </section>
+
+    </main>
+
+    <!-- Thông báo Toast nhỏ ở góc dưới màn hình -->
+    <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm px-4 py-2.5 rounded-md shadow-lg opacity-0 pointer-events-none transition-opacity duration-300 z-50">
+        Đã lưu câu trả lời!
+    </div>
+
+    <script>
+        // Đăng ký plugin hiển thị số % trực tiếp trên các miếng quạt
+        Chart.register(ChartDataLabels);
+
+        // Dữ liệu khảo sát lưu trữ trong localStorage (khởi tạo toàn bộ bằng 0)
+        const STORAGE_KEY = 'chem_poll_gform_zero_v2';
+
+        const defaultState = {
+            q1: { green: 0, yellow: 0, red: 0 },
+            q2: { green: 0, yellow: 0, red: 0 },
+            comments: []
+        };
+
+        let surveyData = loadSurveyData();
+        let chartQ1 = null;
+        let chartQ2 = null;
+
+        // Đọc dữ liệu từ localStorage hoặc khởi tạo bằng 0
+        function loadSurveyData() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed && parsed.q1 && parsed.q2 && Array.isArray(parsed.comments)) {
+                        return parsed;
+                    }
+                }
+            } catch (e) {
+                console.warn('Không thể đọc localStorage:', e);
+            }
+            return JSON.parse(JSON.stringify(defaultState));
+        }
+
+        // Lưu dữ liệu vào localStorage
+        function saveSurveyData() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(surveyData));
+            } catch (e) {
+                console.warn('Không thể lưu localStorage:', e);
+            }
+        }
+
+        // Cập nhật số lượng phiếu trên thanh điều hướng
+        function updateHeaderBadge() {
+            const total = surveyData.q1.green + surveyData.q1.yellow + surveyData.q1.red;
+            const badge = document.getElementById('badge-count');
+            if (badge) badge.textContent = total;
+        }
+
+        // Chuyển đổi giữa tab "Câu hỏi" và tab "Câu trả lời"
+        function switchTab(tabName) {
+            const viewQuestions = document.getElementById('view-questions');
+            const viewResponses = document.getElementById('view-responses');
+            const tabQuestions = document.getElementById('tab-questions');
+            const tabResponses = document.getElementById('tab-responses');
+
+            if (tabName === 'questions') {
+                viewQuestions.classList.remove('hidden');
+                viewResponses.classList.add('hidden');
+                tabQuestions.classList.add('active');
+                tabQuestions.classList.remove('text-gray-600');
+                tabResponses.classList.remove('active');
+                tabResponses.classList.add('text-gray-600');
+            } else {
+                viewQuestions.classList.add('hidden');
+                viewResponses.classList.remove('hidden');
+                tabResponses.classList.add('active');
+                tabResponses.classList.remove('text-gray-600');
+                tabQuestions.classList.remove('active');
+                tabQuestions.classList.add('text-gray-600');
+                renderResponsesView();
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Xóa trạng thái báo lỗi khi người dùng chọn đáp án
+        function clearError(cardId, errId) {
+            const card = document.getElementById(cardId);
+            const err = document.getElementById(errId);
+            if (card) card.classList.remove('error-shake', 'border-[#d93025]');
+            if (err) err.classList.add('hidden');
+        }
+
+        // Xử lý gửi phiếu bình chọn
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            const q1Selected = document.querySelector('input[name="q1"]:checked');
+            const q2Selected = document.querySelector('input[name="q2"]:checked');
+            let isValid = true;
+
+            if (!q1Selected) {
+                const card1 = document.getElementById('card-q1');
+                card1.classList.remove('error-shake');
+                void card1.offsetWidth;
+                card1.classList.add('error-shake');
+                document.getElementById('err-q1').classList.remove('hidden');
+                isValid = false;
+            }
+
+            if (!q2Selected) {
+                const card2 = document.getElementById('card-q2');
+                card2.classList.remove('error-shake');
+                void card2.offsetWidth;
+                card2.classList.add('error-shake');
+                document.getElementById('err-q2').classList.remove('hidden');
+                isValid = false;
+            }
+
+            if (!isValid) {
+                showToast('Vui lòng chọn đầy đủ các câu hỏi bắt buộc (*)');
+                return;
+            }
+
+            // Cộng dồn phiếu bình chọn
+            surveyData.q1[q1Selected.value] += 1;
+            surveyData.q2[q2Selected.value] += 1;
+
+            const commentVal = document.getElementById('comment-input').value.trim();
+            if (commentVal) {
+                surveyData.comments.unshift(commentVal);
+            }
+
+            saveSurveyData();
+            updateHeaderBadge();
+
+            // Hiển thị thẻ xác nhận đã ghi nhận câu trả lời
+            document.getElementById('survey-form').classList.add('hidden');
+            document.getElementById('submit-success-card').classList.remove('hidden');
+            showToast('Đã ghi nhận phiếu bình chọn của bạn!');
+        }
+
+        // Xóa hết lựa chọn đang nhập trên form
+        function resetFormInputs() {
+            document.getElementById('survey-form').reset();
+            clearError('card-q1', 'err-q1');
+            clearError('card-q2', 'err-q2');
+            showToast('Đã xóa lựa chọn trên biểu mẫu');
+        }
+
+        // Quay lại biểu mẫu để gửi thêm lượt bình chọn mới
+        function submitAnotherResponse() {
+            resetFormInputs();
+            document.getElementById('submit-success-card').classList.add('hidden');
+            document.getElementById('survey-form').classList.remove('hidden');
+        }
+
+        // Đặt lại toàn bộ số liệu thống kê về 0
+        function resetAllSurveyData() {
+            surveyData = JSON.parse(JSON.stringify(defaultState));
+            saveSurveyData();
+            updateHeaderBadge();
+            renderResponsesView();
+            showToast('Đã đặt lại toàn bộ số phiếu về 0');
+        }
+
+        // Khởi tạo hoặc cập nhật biểu đồ hình quạt (Pie Chart)
+        function buildPieChart(canvasId, existingChart, counts) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            if (existingChart) {
+                existingChart.destroy();
+            }
+
+            const total = counts.green + counts.yellow + counts.red;
+            const dataValues = [counts.green, counts.yellow, counts.red];
+
+            return new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: [
+                        'Biết cách làm và giải thích được (Xanh)',
+                        'Biết nhưng chưa giải thích được (Vàng)',
+                        'Chưa biết cách làm (Đỏ)'
+                    ],
+                    datasets: [{
+                        data: total === 0 ? [1, 1, 1] : dataValues,
+                        backgroundColor: total === 0 
+                            ? ['#e5e7eb', '#e5e7eb', '#e5e7eb'] 
+                            : ['#22c55e', '#eab308', '#ef4444'],
+                        borderColor: '#ffffff',
+                        borderWidth: 2,
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: window.innerWidth < 640 ? 'bottom' : 'right',
+                            labels: {
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                padding: 14,
+                                font: { family: 'Roboto', size: 12 },
+                                color: '#202124'
+                            }
+                        },
+                        tooltip: {
+                            enabled: total > 0,
+                            callbacks: {
+                                label: function(context) {
+                                    const val = context.raw;
+                                    const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                                    return ` ${val} phiếu (${pct}%)`;
+                                }
+                            }
+                        },
+                        datalabels: {
+                            color: function(context) {
+                                if (total === 0) return '#6b7280';
+                                // Chữ màu tối trên nền vàng để dễ đọc, trắng trên nền xanh và đỏ
+                                return context.dataIndex === 1 ? '#202124' : '#ffffff';
+                            },
+                            font: {
+                                family: 'Roboto',
+                                weight: 'bold',
+                                size: 12
+                            },
+                            formatter: function(value, context) {
+                                if (total === 0) return '0%';
+                                const pct = (value / total) * 100;
+                                return pct >= 5 ? pct.toFixed(1) + '%' : '';
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderStatsMiniBar(containerId, counts) {
+            const total = counts.green + counts.yellow + counts.red;
+            const pct = (v) => total > 0 ? ((v / total) * 100).toFixed(1) + '%' : '0%';
+            document.getElementById(containerId).innerHTML = `
+                <div class="bg-green-50 rounded p-2 border border-green-100">
+                    <div class="font-bold text-[#137333]">${counts.green} phiếu (${pct(counts.green)})</div>
+                    <div class="text-gray-600 mt-0.5">Màu xanh</div>
+                </div>
+                <div class="bg-yellow-50 rounded p-2 border border-yellow-100">
+                    <div class="font-bold text-[#b06000]">${counts.yellow} phiếu (${pct(counts.yellow)})</div>
+                    <div class="text-gray-600 mt-0.5">Màu vàng</div>
+                </div>
+                <div class="bg-red-50 rounded p-2 border border-red-100">
+                    <div class="font-bold text-[#c5221f]">${counts.red} phiếu (${pct(counts.red)})</div>
+                    <div class="text-gray-600 mt-0.5">Màu đỏ</div>
+                </div>
+            `;
+        }
+
+        function renderResponsesView() {
+            const totalQ1 = surveyData.q1.green + surveyData.q1.yellow + surveyData.q1.red;
+            const totalQ2 = surveyData.q2.green + surveyData.q2.yellow + surveyData.q2.red;
+
+            document.getElementById('total-responses-text').textContent = totalQ1;
+            document.getElementById('q1-subcount').textContent = totalQ1;
+            document.getElementById('q2-subcount').textContent = totalQ2;
+
+            chartQ1 = buildPieChart('pieChartQ1', chartQ1, surveyData.q1);
+            chartQ2 = buildPieChart('pieChartQ2', chartQ2, surveyData.q2);
+
+            renderStatsMiniBar('q1-stats-bar', surveyData.q1);
+            renderStatsMiniBar('q2-stats-bar', surveyData.q2);
+
+            // Hiển thị danh sách ý kiến đóng góp thêm
+            const commentsList = document.getElementById('comments-list');
+            document.getElementById('comments-count').textContent = surveyData.comments.length;
+
+            if (surveyData.comments.length === 0) {
+                commentsList.innerHTML = `<p class="text-sm text-gray-400 italic py-2">Chưa có ý kiến đóng góp nào.</p>`;
+            } else {
+                commentsList.innerHTML = surveyData.comments.map(text => `
+                    <div class="bg-gray-50 border border-gray-200/80 rounded-md px-3.5 py-2.5 text-sm text-gray-800">
+                        ${escapeHtml(text)}
+                    </div>
+                `).join('');
+            }
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, m => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[m]));
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.remove('opacity-0');
+            setTimeout(() => toast.classList.add('opacity-0'), 2500);
+        }
+
+        // Khởi tạo khi mở trang
+        window.onload = function() {
+            updateHeaderBadge();
+        };
+
+        // Cập nhật lại vị trí chú thích biểu đồ khi xoay màn hình / đổi kích thước
+        window.addEventListener('resize', () => {
+            if (!document.getElementById('view-responses').classList.contains('hidden')) {
+                renderResponsesView();
+            }
+        });
+    </script>
+</body>
+</html>
